@@ -4,11 +4,9 @@ import requests
 from datetime import datetime, timezone
 
 # ---------- تنظیمات ----------
-# هشدار: قرار دادن توکن مستقیم در کد ناامن است.
-# اگر این فایل به ریپازیتوری Push شود (مخصوصاً public)، توکن لو می‌رود.
 TOKEN = "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"
-DATA_FILE = "data.txt"          # فایل واحد شامل URL و Gist ID
-TARGET_FILENAME = "gistfile1.txt"    # نام فایل داخل Gist
+DATA_FILE = "data.txt"
+TARGET_FILENAME = "gistfile1.txt"
 OLD_TEXT = "Nova"
 NEW_TEXT = "MOR VPN"
 REQUEST_TIMEOUT = 30
@@ -32,10 +30,6 @@ def log_success(msg):
 
 
 def parse_data_file(path):
-    """
-    فایل را بر اساس خط خالی (دو اینتر) به بلوک‌ها تقسیم می‌کند.
-    هر بلوک باید دو خط داشته باشد: خط اول URL، خط دوم Gist ID.
-    """
     with open(path, "r", encoding="utf-8") as f:
         raw = f.read()
 
@@ -47,17 +41,34 @@ def parse_data_file(path):
         if len(lines) < 2:
             log_warn(f"بلوک شماره {idx} ناقص است و نادیده گرفته شد: {block!r}")
             continue
+
         url, gist_id = lines[0], lines[1]
         pairs.append((url, gist_id))
 
     return pairs
 
 
+def remove_first_config(text):
+    lines = text.splitlines()
+
+    first_found = False
+    result = []
+
+    for line in lines:
+        if not first_found and line.strip():
+            first_found = True
+            continue
+
+        result.append(line)
+
+    return "\n".join(result)
+
+
 def main():
     log_info("شروع اجرای اسکریپت update_combined.py")
 
     if not TOKEN or TOKEN == "PASTE_YOUR_TOKEN_HERE":
-        log_error("توکن تنظیم نشده است. مقدار TOKEN را در بالای فایل جایگزین کنید.")
+        log_error("توکن تنظیم نشده است.")
         sys.exit(1)
 
     headers = {
@@ -82,17 +93,40 @@ def main():
         try:
             resp = requests.get(url, timeout=REQUEST_TIMEOUT)
             resp.raise_for_status()
+
+            # UTF-8 Decode
+            resp.encoding = "utf-8"
             text = resp.text
+
             log_info(f"[{i}/{count}] دانلود موفق ({len(text)} کاراکتر دریافت شد)")
 
+            # حذف اولین کانفیگ
+            original_lines = len(text.splitlines())
+            text = remove_first_config(text)
+            new_lines = len(text.splitlines())
+
+            log_info(
+                f"[{i}/{count}] اولین کانفیگ حذف شد ({original_lines - new_lines} خط)"
+            )
+
+            # جایگزینی Nova -> MOR VPN
             occurrences = text.count(OLD_TEXT)
             text = text.replace(OLD_TEXT, NEW_TEXT)
-            log_info(f"[{i}/{count}] {occurrences} مورد '{OLD_TEXT}' با '{NEW_TEXT}' جایگزین شد")
+
+            log_info(
+                f"[{i}/{count}] {occurrences} مورد '{OLD_TEXT}' با '{NEW_TEXT}' جایگزین شد"
+            )
 
             update_resp = requests.patch(
                 f"https://api.github.com/gists/{gist_id}",
                 headers=headers,
-                json={"files": {TARGET_FILENAME: {"content": text}}},
+                json={
+                    "files": {
+                        TARGET_FILENAME: {
+                            "content": text
+                        }
+                    }
+                },
                 timeout=REQUEST_TIMEOUT
             )
 
@@ -100,13 +134,16 @@ def main():
                 log_success(f"[{i}/{count}] Gist با موفقیت آپدیت شد: {gist_id}")
                 success_count += 1
             else:
-                log_error(f"[{i}/{count}] آپدیت Gist ناموفق بود ({update_resp.status_code}): {gist_id}")
+                log_error(
+                    f"[{i}/{count}] آپدیت Gist ناموفق بود ({update_resp.status_code}): {gist_id}"
+                )
                 log_error(f"پاسخ سرور: {update_resp.text}")
                 fail_count += 1
 
         except requests.exceptions.RequestException as e:
             log_error(f"[{i}/{count}] خطای شبکه برای {url}: {e}")
             fail_count += 1
+
         except Exception as e:
             log_error(f"[{i}/{count}] خطای غیرمنتظره برای {url}: {e}")
             fail_count += 1
