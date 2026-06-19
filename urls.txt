@@ -1,1 +1,1 @@
-vless://0341374f-4711-4ac0-886e-e747386ef541@172.67.200.192:443?encryption=none&security=tls&sni=morvpn.familymor.workers.dev&fp=chrome&insecure=0&allowInsecure=0&type=ws&host=morvpn.familymor.workers.dev&path=%2F#AAA
+https://gist.githubusercontent.com/MortezaMdamli/6b5356f8c67e1c561082562ae2149c1b/raw/9c274d4b99efdfd1883c11e957def4d30508b71f/gistfile1.txt
