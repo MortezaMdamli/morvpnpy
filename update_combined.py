@@ -4,9 +4,11 @@ import requests
 from datetime import datetime, timezone
 
 # ---------- تنظیمات ----------
-TOKEN = os.environ.get("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")
+# هشدار: قرار دادن توکن مستقیم در کد ناامن است.
+# اگر این فایل به ریپازیتوری Push شود (مخصوصاً public)، توکن لو می‌رود.
+TOKEN = "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"
 DATA_FILE = "data.txt"          # فایل واحد شامل URL و Gist ID
-TARGET_FILENAME = "gistfile1.txt"    # نام فایل داخل Gist
+TARGET_FILENAME = "gistfile2.txt"    # نام فایل داخل Gist
 OLD_TEXT = "AAA"
 NEW_TEXT = "BBB"
 REQUEST_TIMEOUT = 30
@@ -54,8 +56,8 @@ def parse_data_file(path):
 def main():
     log_info("شروع اجرای اسکریپت update_combined.py")
 
-    if not TOKEN:
-        log_error("متغیر محیطی GH_TOKEN تنظیم نشده است. اسکریپت متوقف شد.")
+    if not TOKEN or TOKEN == "PASTE_YOUR_TOKEN_HERE":
+        log_error("توکن تنظیم نشده است. مقدار TOKEN را در بالای فایل جایگزین کنید.")
         sys.exit(1)
 
     headers = {
