@@ -9,8 +9,8 @@ from datetime import datetime, timezone
 TOKEN = "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"
 DATA_FILE = "data.txt"          # فایل واحد شامل URL و Gist ID
 TARGET_FILENAME = "gistfile1.txt"    # نام فایل داخل Gist
-OLD_TEXT = "AAA"
-NEW_TEXT = "BBB"
+OLD_TEXT = "Nova"
+NEW_TEXT = "MOR VPN"
 REQUEST_TIMEOUT = 30
 
 # ---------- ابزار لاگ ----------
