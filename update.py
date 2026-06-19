@@ -4,7 +4,7 @@ import requests
 from datetime import datetime, timezone
 
 # ---------- تنظیمات ----------
-TOKEN = os.environ.get("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")
+TOKEN = os.environ.get("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")
 DATA_FILE = "data.txt"          # فایل واحد شامل URL و Gist ID
 TARGET_FILENAME = "gistfile1.txt"    # نام فایل داخل Gist
 OLD_TEXT = "AAA"
