@@ -33,15 +33,15 @@ log("OK", msg)
 
 def parse_data_file(path):
 """
-فایل را بر اساس خط خالی (دو اینتر) به بلوک‌ها تقسیم می‌کند.
-هر بلوک باید دو خط داشته باشد:
-خط اول URL
-خط دوم Gist ID
-"""
-with open(path, "r", encoding="utf-8") as f:
-raw = f.read()
+هر بلوک:
+URL
 
 ```
+GIST_ID
+"""
+with open(path, "r", encoding="utf-8") as f:
+    raw = f.read()
+
 blocks = [b.strip() for b in raw.split("\n\n") if b.strip()]
 pairs = []
 
@@ -49,10 +49,14 @@ for idx, block in enumerate(blocks, start=1):
     lines = [line.strip() for line in block.splitlines() if line.strip()]
 
     if len(lines) < 2:
-        log_warn(f"بلوک شماره {idx} ناقص است و نادیده گرفته شد: {block!r}")
+        log_warn(
+            f"بلوک شماره {idx} ناقص است و نادیده گرفته شد."
+        )
         continue
 
-    url, gist_id = lines[0], lines[1]
+    url = lines[0]
+    gist_id = lines[1]
+
     pairs.append((url, gist_id))
 
 return pairs
@@ -77,7 +81,9 @@ if not os.path.exists(DATA_FILE):
 
 pairs = parse_data_file(DATA_FILE)
 
-log_info(f"{len(pairs)} جفت (URL + Gist) از {DATA_FILE} خوانده شد.")
+log_info(
+    f"{len(pairs)} جفت (URL + Gist) از {DATA_FILE} خوانده شد."
+)
 
 success_count = 0
 fail_count = 0
@@ -90,14 +96,23 @@ for i, (url, gist_id) in enumerate(pairs, start=1):
     )
 
     try:
-        resp = requests.get(url, timeout=REQUEST_TIMEOUT)
+        resp = requests.get(
+            url,
+            timeout=REQUEST_TIMEOUT
+        )
         resp.raise_for_status()
 
         encoded_text = resp.text.strip()
 
         try:
-            text = base64.b64decode(encoded_text).decode("utf-8")
-            log_info(f"[{i}/{count}] Base64 با موفقیت Decode شد")
+            text = base64.b64decode(
+                encoded_text
+            ).decode("utf-8")
+
+            log_info(
+                f"[{i}/{count}] Base64 با موفقیت Decode شد"
+            )
+
         except Exception as e:
             log_error(
                 f"[{i}/{count}] خطا در Decode کردن Base64: {e}"
@@ -113,12 +128,17 @@ for i, (url, gist_id) in enumerate(pairs, start=1):
 
         if configs:
             configs.pop(0)
-            log_info(f"[{i}/{count}] اولین کانفیگ حذف شد")
+            log_info(
+                f"[{i}/{count}] اولین کانفیگ حذف شد"
+            )
 
         text = "\n".join(configs)
 
         occurrences = text.count(OLD_TEXT)
-        text = text.replace(OLD_TEXT, NEW_TEXT)
+        text = text.replace(
+            OLD_TEXT,
+            NEW_TEXT
+        )
 
         log_info(
             f"[{i}/{count}] {occurrences} مورد "
@@ -143,27 +163,35 @@ for i, (url, gist_id) in enumerate(pairs, start=1):
                 f"[{i}/{count}] Gist با موفقیت آپدیت شد: {gist_id}"
             )
             success_count += 1
+
         else:
             log_error(
                 f"[{i}/{count}] آپدیت Gist ناموفق بود "
-                f"({update_resp.status_code}): {gist_id}"
+                f"({update_resp.status_code})"
             )
-            log_error(f"پاسخ سرور: {update_resp.text}")
+            log_error(update_resp.text)
             fail_count += 1
 
     except requests.exceptions.RequestException as e:
-        log_error(f"[{i}/{count}] خطای شبکه برای {url}: {e}")
+        log_error(
+            f"[{i}/{count}] خطای شبکه برای {url}: {e}"
+        )
         fail_count += 1
 
     except Exception as e:
-        log_error(f"[{i}/{count}] خطای غیرمنتظره برای {url}: {e}")
+        log_error(
+            f"[{i}/{count}] خطای غیرمنتظره: {e}"
+        )
         fail_count += 1
 
 log_info("=" * 50)
 log_info(
-    f"خلاصه اجرا: {success_count} موفق | "
-    f"{fail_count} ناموفق | {count} کل"
+    f"خلاصه اجرا: "
+    f"{success_count} موفق | "
+    f"{fail_count} ناموفق | "
+    f"{count} کل"
 )
+
 log_info("پایان اجرای اسکریپت")
 
 if fail_count > 0:
