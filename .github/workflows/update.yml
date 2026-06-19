@@ -2,7 +2,7 @@ name: Auto Update
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "*/1 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -18,7 +18,6 @@ jobs:
 
       - run: pip install requests
 
-      - name: Run update script
-        run: python update.py
+      - run: python update_combined.py
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
