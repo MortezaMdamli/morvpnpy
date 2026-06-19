@@ -4,13 +4,9 @@ import requests
 from datetime import datetime, timezone
 
 # ---------- تنظیمات ----------
-# هشدار: قرار دادن توکن مستقیم در کد ناامن است.
-# اگر این فایل به ریپازیتوری (مخصوصاً public) Push شود، توکن لو می‌رود.
-# توصیه می‌شود به‌جای این روش از GitHub Secrets استفاده شود.
-TOKEN = "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"
-URLS_FILE = "urls.txt"
-GISTS_FILE = "gists.txt"
-TARGET_FILENAME = "gistfile1.txt"   # نام فایل داخل Gist
+TOKEN = os.environ.get("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")
+DATA_FILE = "data.txt"          # فایل واحد شامل URL و Gist ID
+TARGET_FILENAME = "gistfile1.txt"    # نام فایل داخل Gist
 OLD_TEXT = "AAA"
 NEW_TEXT = "BBB"
 REQUEST_TIMEOUT = 30
@@ -33,12 +29,33 @@ def log_success(msg):
     log("OK", msg)
 
 
-def main():
-    log_info("شروع اجرای اسکریپت update.py")
+def parse_data_file(path):
+    """
+    فایل را بر اساس خط خالی (دو اینتر) به بلوک‌ها تقسیم می‌کند.
+    هر بلوک باید دو خط داشته باشد: خط اول URL، خط دوم Gist ID.
+    """
+    with open(path, "r", encoding="utf-8") as f:
+        raw = f.read()
 
-    # بررسی وجود توکن
-    if not TOKEN or TOKEN == "PASTE_YOUR_TOKEN_HERE":
-        log_error("توکن تنظیم نشده است. مقدار TOKEN را در بالای فایل جایگزین کنید.")
+    blocks = [b.strip() for b in raw.split("\n\n") if b.strip()]
+    pairs = []
+
+    for idx, block in enumerate(blocks, start=1):
+        lines = [line.strip() for line in block.splitlines() if line.strip()]
+        if len(lines) < 2:
+            log_warn(f"بلوک شماره {idx} ناقص است و نادیده گرفته شد: {block!r}")
+            continue
+        url, gist_id = lines[0], lines[1]
+        pairs.append((url, gist_id))
+
+    return pairs
+
+
+def main():
+    log_info("شروع اجرای اسکریپت update_combined.py")
+
+    if not TOKEN:
+        log_error("متغیر محیطی GH_TOKEN تنظیم نشده است. اسکریپت متوقف شد.")
         sys.exit(1)
 
     headers = {
@@ -46,50 +63,30 @@ def main():
         "Accept": "application/vnd.github+json"
     }
 
-    # خواندن urls.txt
-    if not os.path.exists(URLS_FILE):
-        log_error(f"فایل {URLS_FILE} پیدا نشد.")
+    if not os.path.exists(DATA_FILE):
+        log_error(f"فایل {DATA_FILE} پیدا نشد.")
         sys.exit(1)
-    with open(URLS_FILE, "r", encoding="utf-8") as f:
-        urls = [line.strip() for line in f if line.strip()]
-    log_info(f"{len(urls)} لینک از {URLS_FILE} خوانده شد.")
 
-    # خواندن gists.txt
-    if not os.path.exists(GISTS_FILE):
-        log_error(f"فایل {GISTS_FILE} پیدا نشد.")
-        sys.exit(1)
-    with open(GISTS_FILE, "r", encoding="utf-8") as f:
-        gists = [line.strip() for line in f if line.strip()]
-    log_info(f"{len(gists)} Gist ID از {GISTS_FILE} خوانده شد.")
+    pairs = parse_data_file(DATA_FILE)
+    log_info(f"{len(pairs)} جفت (URL + Gist) از {DATA_FILE} خوانده شد.")
 
-    if len(urls) != len(gists):
-        log_warn(
-            f"تعداد URL ها ({len(urls)}) با تعداد Gist ID ها ({len(gists)}) برابر نیست. "
-            f"فقط {min(len(urls), len(gists))} مورد پردازش می‌شود."
-        )
-
-    count = min(len(urls), len(gists))
     success_count = 0
     fail_count = 0
+    count = len(pairs)
 
-    for i in range(count):
-        url = urls[i]
-        gist_id = gists[i]
-        log_info(f"[{i+1}/{count}] در حال پردازش -> URL: {url} | Gist: {gist_id}")
+    for i, (url, gist_id) in enumerate(pairs, start=1):
+        log_info(f"[{i}/{count}] در حال پردازش -> URL: {url} | Gist: {gist_id}")
 
         try:
-            # دریافت متن از URL
             resp = requests.get(url, timeout=REQUEST_TIMEOUT)
             resp.raise_for_status()
             text = resp.text
-            log_info(f"[{i+1}/{count}] دانلود موفق ({len(text)} کاراکتر دریافت شد)")
+            log_info(f"[{i}/{count}] دانلود موفق ({len(text)} کاراکتر دریافت شد)")
 
-            # اعمال تغییرات
             occurrences = text.count(OLD_TEXT)
             text = text.replace(OLD_TEXT, NEW_TEXT)
-            log_info(f"[{i+1}/{count}] {occurrences} مورد '{OLD_TEXT}' با '{NEW_TEXT}' جایگزین شد")
+            log_info(f"[{i}/{count}] {occurrences} مورد '{OLD_TEXT}' با '{NEW_TEXT}' جایگزین شد")
 
-            # بروزرسانی Gist
             update_resp = requests.patch(
                 f"https://api.github.com/gists/{gist_id}",
                 headers=headers,
@@ -98,23 +95,20 @@ def main():
             )
 
             if update_resp.status_code == 200:
-                log_success(f"[{i+1}/{count}] Gist با موفقیت آپدیت شد: {gist_id}")
+                log_success(f"[{i}/{count}] Gist با موفقیت آپدیت شد: {gist_id}")
                 success_count += 1
             else:
-                log_error(
-                    f"[{i+1}/{count}] آپدیت Gist ناموفق بود ({update_resp.status_code}): {gist_id}"
-                )
+                log_error(f"[{i}/{count}] آپدیت Gist ناموفق بود ({update_resp.status_code}): {gist_id}")
                 log_error(f"پاسخ سرور: {update_resp.text}")
                 fail_count += 1
 
         except requests.exceptions.RequestException as e:
-            log_error(f"[{i+1}/{count}] خطای شبکه برای {url}: {e}")
+            log_error(f"[{i}/{count}] خطای شبکه برای {url}: {e}")
             fail_count += 1
         except Exception as e:
-            log_error(f"[{i+1}/{count}] خطای غیرمنتظره برای {url}: {e}")
+            log_error(f"[{i}/{count}] خطای غیرمنتظره برای {url}: {e}")
             fail_count += 1
 
-    # ---------- خلاصه نهایی ----------
     log_info("=" * 50)
     log_info(f"خلاصه اجرا: {success_count} موفق | {fail_count} ناموفق | {count} کل")
     log_info("پایان اجرای اسکریپت")
