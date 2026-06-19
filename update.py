@@ -1,18 +1,22 @@
 import requests
 
-TOKEN = "YOUR_TOKEN"
+# توکن GitHub
+TOKEN = "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"
 
 headers = {
     "Authorization": f"Bearer {TOKEN}",
     "Accept": "application/vnd.github+json"
 }
 
-with open("urls.txt", "r") as f:
-    urls = [x.strip() for x in f if x.strip()]
+# خواندن URL ها
+with open("urls.txt", "r", encoding="utf-8") as f:
+    urls = [line.strip() for line in f if line.strip()]
 
-with open("gists.txt", "r") as f:
-    gists = [x.strip() for x in f if x.strip()]
+# خواندن Gist ID ها
+with open("gists.txt", "r", encoding="utf-8") as f:
+    gists = [line.strip() for line in f if line.strip()]
 
+# تعداد URL و Gist باید برابر باشد
 count = min(len(urls), len(gists))
 
 for i in range(count):
@@ -20,12 +24,16 @@ for i in range(count):
     gist_id = gists[i]
 
     try:
-        text = requests.get(url, timeout=20).text
+        print(f"Reading: {url}")
 
-        # تغییر اصلی تو
+        # دریافت متن از URL
+        text = requests.get(url, timeout=30).text
+
+        # تغییرات دلخواه
         text = text.replace("AAA", "BBB")
 
-        requests.patch(
+        # بروزرسانی Gist
+        response = requests.patch(
             f"https://api.github.com/gists/{gist_id}",
             headers=headers,
             json={
@@ -37,5 +45,12 @@ for i in range(count):
             }
         )
 
+        if response.status_code == 200:
+            print(f"Gist updated: {gist_id}")
+        else:
+            print(f"Failed: {gist_id}")
+            print(response.text)
+
     except Exception as e:
-        print("error:", url, e)
+        print(f"Error in {url}")
+        print(e)
