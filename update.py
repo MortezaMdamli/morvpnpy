@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 TOKEN = "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"
 URLS_FILE = "urls.txt"
 GISTS_FILE = "gists.txt"
-TARGET_FILENAME = "file.txt"   # نام فایل داخل Gist
+TARGET_FILENAME = "gistfile1.txt"   # نام فایل داخل Gist
 OLD_TEXT = "AAA"
 NEW_TEXT = "BBB"
 REQUEST_TIMEOUT = 30
