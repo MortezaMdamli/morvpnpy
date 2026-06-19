@@ -5,198 +5,175 @@ import requests
 from datetime import datetime, timezone
 
 # ---------- تنظیمات ----------
-
 TOKEN = "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"
-DATA_FILE = "data.txt"
+DATA_FILE = "data.txt"          # فایل شامل URL و Gist ID
 TARGET_FILENAME = "gistfile1.txt"
 OLD_TEXT = "Nova"
 NEW_TEXT = "MOR VPN"
 REQUEST_TIMEOUT = 30
 
-# ---------- ابزار لاگ ----------
 
+# ---------- ابزار لاگ ----------
 def log(level, message):
-ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
-print(f"[{ts}] [{level}] {message}", flush=True)
+    ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    print(f"[{ts}] [{level}] {message}", flush=True)
+
 
 def log_info(msg):
-log("INFO", msg)
+    log("INFO", msg)
+
 
 def log_warn(msg):
-log("WARN", msg)
+    log("WARN", msg)
+
 
 def log_error(msg):
-log("ERROR", msg)
+    log("ERROR", msg)
+
 
 def log_success(msg):
-log("OK", msg)
+    log("OK", msg)
 
+
+# ---------- خواندن data.txt ----------
 def parse_data_file(path):
-"""
-هر بلوک:
-URL
+    """
+    فرمت فایل:
 
-```
-GIST_ID
-"""
-with open(path, "r", encoding="utf-8") as f:
-    raw = f.read()
+    URL
+    GIST_ID
 
-blocks = [b.strip() for b in raw.split("\n\n") if b.strip()]
-pairs = []
+    URL
+    GIST_ID
+    """
 
-for idx, block in enumerate(blocks, start=1):
-    lines = [line.strip() for line in block.splitlines() if line.strip()]
+    with open(path, "r", encoding="utf-8") as f:
+        raw = f.read()
 
-    if len(lines) < 2:
-        log_warn(
-            f"بلوک شماره {idx} ناقص است و نادیده گرفته شد."
-        )
-        continue
+    blocks = [b.strip() for b in raw.split("\n\n") if b.strip()]
+    pairs = []
 
-    url = lines[0]
-    gist_id = lines[1]
+    for idx, block in enumerate(blocks, start=1):
+        lines = [line.strip() for line in block.splitlines() if line.strip()]
 
-    pairs.append((url, gist_id))
-
-return pairs
-```
-
-def main():
-log_info("شروع اجرای اسکریپت update_combined.py")
-
-```
-if not TOKEN or TOKEN == "PASTE_YOUR_TOKEN_HERE":
-    log_error("توکن تنظیم نشده است.")
-    sys.exit(1)
-
-headers = {
-    "Authorization": f"Bearer {TOKEN}",
-    "Accept": "application/vnd.github+json"
-}
-
-if not os.path.exists(DATA_FILE):
-    log_error(f"فایل {DATA_FILE} پیدا نشد.")
-    sys.exit(1)
-
-pairs = parse_data_file(DATA_FILE)
-
-log_info(
-    f"{len(pairs)} جفت (URL + Gist) از {DATA_FILE} خوانده شد."
-)
-
-success_count = 0
-fail_count = 0
-count = len(pairs)
-
-for i, (url, gist_id) in enumerate(pairs, start=1):
-
-    log_info(
-        f"[{i}/{count}] در حال پردازش -> URL: {url} | Gist: {gist_id}"
-    )
-
-    try:
-        resp = requests.get(
-            url,
-            timeout=REQUEST_TIMEOUT
-        )
-        resp.raise_for_status()
-
-        encoded_text = resp.text.strip()
-
-        try:
-            text = base64.b64decode(
-                encoded_text
-            ).decode("utf-8")
-
-            log_info(
-                f"[{i}/{count}] Base64 با موفقیت Decode شد"
-            )
-
-        except Exception as e:
-            log_error(
-                f"[{i}/{count}] خطا در Decode کردن Base64: {e}"
-            )
-            fail_count += 1
+        if len(lines) < 2:
+            log_warn(f"بلوک {idx} ناقص است و رد شد")
             continue
 
-        configs = [
-            line.strip()
-            for line in text.splitlines()
-            if line.strip()
-        ]
+        url = lines[0]
+        gist_id = lines[1]
 
-        if configs:
-            configs.pop(0)
-            log_info(
-                f"[{i}/{count}] اولین کانفیگ حذف شد"
-            )
+        pairs.append((url, gist_id))
 
-        text = "\n".join(configs)
+    return pairs
 
-        occurrences = text.count(OLD_TEXT)
-        text = text.replace(
-            OLD_TEXT,
-            NEW_TEXT
-        )
+
+# ---------- پردازش محتوا ----------
+def process_content(encoded_text):
+    # Base64 Decode
+    text = base64.b64decode(encoded_text).decode("utf-8")
+
+    # تبدیل به لیست کانفیگ‌ها
+    configs = [
+        line.strip()
+        for line in text.splitlines()
+        if line.strip()
+    ]
+
+    # حذف اولین کانفیگ
+    if configs:
+        configs.pop(0)
+
+    text = "\n".join(configs)
+
+    # جایگزینی Nova با MOR VPN
+    text = text.replace(OLD_TEXT, NEW_TEXT)
+
+    return text
+
+
+# ---------- برنامه اصلی ----------
+def main():
+    log_info("شروع اجرا")
+
+    if not TOKEN or TOKEN == "YOUR_GITHUB_TOKEN":
+        log_error("توکن GitHub تنظیم نشده است")
+        sys.exit(1)
+
+    if not os.path.exists(DATA_FILE):
+        log_error(f"فایل {DATA_FILE} پیدا نشد")
+        sys.exit(1)
+
+    headers = {
+        "Authorization": f"Bearer {TOKEN}",
+        "Accept": "application/vnd.github+json"
+    }
+
+    pairs = parse_data_file(DATA_FILE)
+
+    success_count = 0
+    fail_count = 0
+
+    for index, (url, gist_id) in enumerate(pairs, start=1):
 
         log_info(
-            f"[{i}/{count}] {occurrences} مورد "
-            f"'{OLD_TEXT}' با '{NEW_TEXT}' جایگزین شد"
+            f"[{index}/{len(pairs)}] URL={url} | GIST={gist_id}"
         )
 
-        update_resp = requests.patch(
-            f"https://api.github.com/gists/{gist_id}",
-            headers=headers,
-            json={
-                "files": {
-                    TARGET_FILENAME: {
-                        "content": text
+        try:
+            # دانلود
+            response = requests.get(
+                url,
+                timeout=REQUEST_TIMEOUT
+            )
+            response.raise_for_status()
+
+            encoded_text = response.text.strip()
+
+            # پردازش
+            content = process_content(encoded_text)
+
+            # آپدیت Gist
+            update_response = requests.patch(
+                f"https://api.github.com/gists/{gist_id}",
+                headers=headers,
+                json={
+                    "files": {
+                        TARGET_FILENAME: {
+                            "content": content
+                        }
                     }
-                }
-            },
-            timeout=REQUEST_TIMEOUT
-        )
-
-        if update_resp.status_code == 200:
-            log_success(
-                f"[{i}/{count}] Gist با موفقیت آپدیت شد: {gist_id}"
+                },
+                timeout=REQUEST_TIMEOUT
             )
-            success_count += 1
 
-        else:
-            log_error(
-                f"[{i}/{count}] آپدیت Gist ناموفق بود "
-                f"({update_resp.status_code})"
-            )
-            log_error(update_resp.text)
+            if update_response.status_code == 200:
+                log_success(
+                    f"[{index}/{len(pairs)}] آپدیت شد"
+                )
+                success_count += 1
+            else:
+                log_error(
+                    f"[{index}/{len(pairs)}] خطا: "
+                    f"{update_response.status_code}"
+                )
+                log_error(update_response.text)
+                fail_count += 1
+
+        except Exception as e:
+            log_error(str(e))
             fail_count += 1
 
-    except requests.exceptions.RequestException as e:
-        log_error(
-            f"[{i}/{count}] خطای شبکه برای {url}: {e}"
-        )
-        fail_count += 1
+    log_info("=" * 50)
+    log_info(
+        f"موفق: {success_count} | "
+        f"ناموفق: {fail_count} | "
+        f"کل: {len(pairs)}"
+    )
 
-    except Exception as e:
-        log_error(
-            f"[{i}/{count}] خطای غیرمنتظره: {e}"
-        )
-        fail_count += 1
+    if fail_count:
+        sys.exit(1)
 
-log_info("=" * 50)
-log_info(
-    f"خلاصه اجرا: "
-    f"{success_count} موفق | "
-    f"{fail_count} ناموفق | "
-    f"{count} کل"
-)
 
-log_info("پایان اجرای اسکریپت")
-
-if fail_count > 0:
-    sys.exit(1)
-```
-
-if **name** == "**main**":
-main()
+if __name__ == "__main__":
+    main()
