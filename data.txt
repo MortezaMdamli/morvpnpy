@@ -7,5 +7,5 @@ ce99b8067db23912b5615f64628ece9
 https://empty-dew-dd57.adminmorvpn.workers.dev/sub?sub=user1&key=3ecde6d4c24e&b64
 77f2fd873919e29e3409cf0bf564d19a
 
-https://nova-falcon-core-99d6.morteza-madmali.workers.dev/sub?sub=amas&key=c23bde01d271&b64
+https://empty-dew-dd57.adminmorvpn.workers.dev/sub?sub=user1&key=3ecde6d4c24e&b64
 ce99b8067db23912b5615f64628ece9
