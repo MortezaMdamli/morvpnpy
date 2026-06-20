@@ -2,22 +2,30 @@ name: Auto Update
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
-  workflow_dispatch:
+    - cron: "*/10 * * * *"   # هر ۱۰ دقیقه اجرای خودکار
+  workflow_dispatch:          # امکان اجرای دستی از تب Actions
+
+# جلوگیری از اجرای همزمان چند نسخه از این workflow
+concurrency:
+  group: auto-update
+  cancel-in-progress: false
 
 jobs:
   run:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - run: pip install requests
+      - name: Install dependencies
+        run: pip install requests
 
-      - run: python update_combined.py
+      - name: Run update script
+        run: python update_combined.py
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
