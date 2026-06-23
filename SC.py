@@ -51,7 +51,7 @@ channels = [
     "sogoandfuckyourlove", "v2rayng_vpnrog",
 ]
 
-SUB_LINKS_FILE = "111111.txt"
+SUB_LINKS_FILE = "Create subSC.py"
 BASE_DIR = "mor"
 V2RAY_PREFIXES = ("vless://", "vmess://", "trojan://", "ss://", "hy2://", "hysteria2://", "tuic://", "wireguard://")
 PROXY_PREFIXES = ("tg://py",)
