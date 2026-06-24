@@ -165,17 +165,14 @@ def fetch_sub_url(url):
 def fetch_all_subs():
     if not SUB_URLS:
         return []
-    print(Fore.CYAN + f"
-  [*] Fetching {len(SUB_URLS)} sub URLs...
-" + Style.RESET_ALL)
+    print(Fore.CYAN + "\n  [*] Fetching " + str(len(SUB_URLS)) + " sub URLs...\n" + Style.RESET_ALL)
     all_configs = []
     for i, url in enumerate(SUB_URLS, 1):
-        sys.stdout.write(Fore.CYAN + f"  [{i:>2}/{len(SUB_URLS)}] " + Style.RESET_ALL)
+        sys.stdout.write(Fore.CYAN + "  [" + str(i).rjust(2) + "/" + str(len(SUB_URLS)) + "] " + Style.RESET_ALL)
         sys.stdout.flush()
         found = fetch_sub_url(url)
         all_configs.extend(found)
-    print(Fore.GREEN + f"
-  [+] Sub total: {len(all_configs)} configs از {len(SUB_URLS)} لینک" + Style.RESET_ALL)
+    print(Fore.GREEN + "\n  [+] Sub total: " + str(len(all_configs)) + " configs از " + str(len(SUB_URLS)) + " لینک" + Style.RESET_ALL)
     return all_configs
 
 
