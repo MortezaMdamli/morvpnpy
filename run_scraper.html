@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V2Ray Scraper</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 12px;
+    padding: 40px;
+    width: 420px;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .logo { font-size: 48px; margin-bottom: 16px; }
+  h1 { font-size: 22px; color: #58a6ff; margin-bottom: 8px; }
+  p  { font-size: 14px; color: #8b949e; margin-bottom: 28px; line-height: 1.6; }
+
+  .config-section {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    text-align: right;
+  }
+  .config-section label {
+    display: block;
+    font-size: 12px;
+    color: #8b949e;
+    margin-bottom: 4px;
+    margin-top: 12px;
+  }
+  .config-section label:first-child { margin-top: 0; }
+  .config-section input {
+    width: 100%;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: #e6edf3;
+    font-size: 13px;
+    font-family: monospace;
+    direction: ltr;
+  }
+  .config-section input:focus {
+    outline: none;
+    border-color: #58a6ff;
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 8px;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-run {
+    background: #238636;
+    color: #fff;
+  }
+  .btn-run:hover { background: #2ea043; transform: translateY(-1px); }
+  .btn-run:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+
+  .status {
+    margin-top: 20px;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+  }
+  .status.success { background: #0f2a1a; border: 1px solid #238636; color: #3fb950; display: block; }
+  .status.error   { background: #2a0f0f; border: 1px solid #da3633; color: #f85149; display: block; }
+  .status.loading { background: #111827; border: 1px solid #58a6ff; color: #58a6ff; display: block; }
+
+  .last-run {
+    margin-top: 16px;
+    font-size: 12px;
+    color: #484f58;
+  }
+
+  .save-btn {
+    margin-top: 10px;
+    background: none;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .save-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">🛡️</div>
+  <h1>V2Ray Scraper</h1>
+  <p>با کلیک روی دکمه، اسکریپت جمع‌آوری کانفیگ‌ها در GitHub Actions اجرا می‌شه.</p>
+
+  <div class="config-section">
+    <label>GitHub Token (ghp_...)</label>
+    <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+
+    <label>نام کاربری GitHub</label>
+    <input type="text" id="owner" placeholder="username">
+
+    <label>نام Repository</label>
+    <input type="text" id="repo" placeholder="my-repo">
+
+    <label>نام Workflow (مثلاً scraper.yml)</label>
+    <input type="text" id="workflow" placeholder="scraper.yml">
+  </div>
+
+  <button class="btn btn-run" onclick="confirmAndRun()" id="runBtn">
+    ▶  اجرای اسکریپت
+  </button>
+  <button class="save-btn" onclick="saveConfig()">💾 ذخیره تنظیمات</button>
+
+  <div class="status" id="status"></div>
+  <div class="last-run" id="lastRun"></div>
+</div>
+
+<script>
+  // بارگذاری تنظیمات ذخیره‌شده
+  (function loadSaved() {
+    const saved = JSON.parse(localStorage.getItem('scraper_cfg') || '{}');
+    if (saved.token)    document.getElementById('token').value    = saved.token;
+    if (saved.owner)    document.getElementById('owner').value    = saved.owner;
+    if (saved.repo)     document.getElementById('repo').value     = saved.repo;
+    if (saved.workflow) document.getElementById('workflow').value = saved.workflow;
+    const lr = localStorage.getItem('scraper_last_run');
+    if (lr) document.getElementById('lastRun').textContent = 'آخرین اجرا: ' + lr;
+  })();
+
+  function saveConfig() {
+    const cfg = {
+      token:    document.getElementById('token').value.trim(),
+      owner:    document.getElementById('owner').value.trim(),
+      repo:     document.getElementById('repo').value.trim(),
+      workflow: document.getElementById('workflow').value.trim(),
+    };
+    localStorage.setItem('scraper_cfg', JSON.stringify(cfg));
+    showStatus('✅ تنظیمات ذخیره شد.', 'success');
+  }
+
+  function confirmAndRun() {
+    const token    = document.getElementById('token').value.trim();
+    const owner    = document.getElementById('owner').value.trim();
+    const repo     = document.getElementById('repo').value.trim();
+    const workflow = document.getElementById('workflow').value.trim();
+
+    if (!token || !owner || !repo || !workflow) {
+      showStatus('❌ همه فیلدها رو پر کن.', 'error');
+      return;
+    }
+    if (!confirm('اسکریپت scraper رو در GitHub Actions اجرا کنم؟')) return;
+    triggerWorkflow(token, owner, repo, workflow);
+  }
+
+  async function triggerWorkflow(token, owner, repo, workflow) {
+    const btn = document.getElementById('runBtn');
+    btn.disabled = true;
+    showStatus('⏳ در حال ارسال درخواست به GitHub...', 'loading');
+
+    const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflow}/dispatches`;
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `token ${token}`,
+          'Accept': 'application/vnd.github+json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ref: 'main' }),
+      });
+
+      if (res.status === 204) {
+        const now = new Date().toLocaleString('fa-IR');
+        localStorage.setItem('scraper_last_run', now);
+        document.getElementById('lastRun').textContent = 'آخرین اجرا: ' + now;
+        showStatus('✅ Workflow با موفقیت شروع شد!\nبرو GitHub → Actions برای دیدن نتیجه.', 'success');
+      } else {
+        const body = await res.json().catch(() => ({}));
+        showStatus(`❌ خطا ${res.status}: ${body.message || 'ناشناخته'}`, 'error');
+      }
+    } catch (e) {
+      showStatus(`❌ خطای شبکه: ${e.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById('status');
+    el.className = 'status ' + type;
+    el.style.whiteSpace = 'pre-line';
+    el.textContent = msg;
+  }
+</script>
+</body>
+</html>
