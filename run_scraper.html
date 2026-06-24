@@ -5,213 +5,191 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>V2Ray Scraper</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
   body {
-    font-family: 'Segoe UI', Tahoma, sans-serif;
-    background: #0d1117;
-    color: #e6edf3;
-    min-height: 100vh;
+    font-family: 'Inter', sans-serif;
+    background: #0a0a0f;
+    color: #fff;
+    height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
   }
-  .card {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 12px;
-    padding: 40px;
-    width: 420px;
-    text-align: center;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-  }
-  .logo { font-size: 48px; margin-bottom: 16px; }
-  h1 { font-size: 22px; color: #58a6ff; margin-bottom: 8px; }
-  p  { font-size: 14px; color: #8b949e; margin-bottom: 28px; line-height: 1.6; }
 
-  .config-section {
-    background: #0d1117;
-    border: 1px solid #30363d;
-    border-radius: 8px;
-    padding: 16px;
-    margin-bottom: 24px;
-    text-align: right;
+  /* پس‌زمینه متحرک */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 50%, rgba(88,166,255,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 50% at 80% 50%, rgba(35,134,54,0.07) 0%, transparent 70%);
+    pointer-events: none;
   }
-  .config-section label {
-    display: block;
-    font-size: 12px;
-    color: #8b949e;
-    margin-bottom: 4px;
-    margin-top: 12px;
+
+  .wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 32px;
   }
-  .config-section label:first-child { margin-top: 0; }
-  .config-section input {
-    width: 100%;
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 6px;
-    padding: 8px 10px;
-    color: #e6edf3;
+
+  .label {
     font-size: 13px;
-    font-family: monospace;
-    direction: ltr;
-  }
-  .config-section input:focus {
-    outline: none;
-    border-color: #58a6ff;
+    font-weight: 300;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
   }
 
+  /* دکمه اصلی */
   .btn {
-    width: 100%;
-    padding: 14px;
-    border-radius: 8px;
+    position: relative;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
     border: none;
-    font-size: 16px;
-    font-weight: bold;
+    background: rgba(255,255,255,0.04);
     cursor: pointer;
-    transition: all 0.2s;
+    outline: none;
+    transition: transform 0.2s;
   }
-  .btn-run {
-    background: #238636;
-    color: #fff;
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, #238636, #58a6ff, #238636);
+    z-index: -1;
+    animation: spin 4s linear infinite;
   }
-  .btn-run:hover { background: #2ea043; transform: translateY(-1px); }
-  .btn-run:disabled { background: #333; color: #666; cursor: not-allowed; transform: none; }
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 50%;
+    background: #0d1117;
+    z-index: -1;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
+  .btn:hover { transform: scale(1.05); }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .btn-icon { font-size: 40px; }
+  .btn-text { font-size: 13px; font-weight: 600; letter-spacing: 2px; color: rgba(255,255,255,0.8); }
+
+  /* وضعیت */
   .status {
-    margin-top: 20px;
-    padding: 12px;
-    border-radius: 8px;
-    font-size: 14px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.4);
+    height: 20px;
+    transition: color 0.3s;
+  }
+  .status.ok      { color: #3fb950; }
+  .status.err     { color: #f85149; }
+  .status.loading { color: #58a6ff; }
+
+  /* حلقه لودینگ */
+  .spinner {
     display: none;
+    width: 24px; height: 24px;
+    border: 2px solid rgba(88,166,255,0.2);
+    border-top-color: #58a6ff;
+    border-radius: 50%;
+    animation: sp 0.8s linear infinite;
   }
-  .status.success { background: #0f2a1a; border: 1px solid #238636; color: #3fb950; display: block; }
-  .status.error   { background: #2a0f0f; border: 1px solid #da3633; color: #f85149; display: block; }
-  .status.loading { background: #111827; border: 1px solid #58a6ff; color: #58a6ff; display: block; }
+  @keyframes sp { to { transform: rotate(360deg); } }
+  .spinner.show { display: block; }
 
-  .last-run {
-    margin-top: 16px;
-    font-size: 12px;
-    color: #484f58;
-  }
-
-  .save-btn {
-    margin-top: 10px;
-    background: none;
-    border: 1px solid #30363d;
-    color: #8b949e;
-    border-radius: 6px;
-    padding: 6px 14px;
-    font-size: 12px;
-    cursor: pointer;
-  }
-  .save-btn:hover { border-color: #58a6ff; color: #58a6ff; }
+  /* تاریخ آخرین اجرا */
+  .last { font-size: 11px; color: rgba(255,255,255,0.15); letter-spacing: 1px; }
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo">🛡️</div>
-  <h1>V2Ray Scraper</h1>
-  <p>با کلیک روی دکمه، اسکریپت جمع‌آوری کانفیگ‌ها در GitHub Actions اجرا می‌شه.</p>
 
-  <div class="config-section">
-    <label>GitHub Token (ghp_...)</label>
-    <input type="password" id="token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+<div class="wrap">
+  <div class="label">V2Ray Scraper</div>
 
-    <label>نام کاربری GitHub</label>
-    <input type="text" id="owner" placeholder="username">
-
-    <label>نام Repository</label>
-    <input type="text" id="repo" placeholder="my-repo">
-
-    <label>نام Workflow (مثلاً scraper.yml)</label>
-    <input type="text" id="workflow" placeholder="scraper.yml">
-  </div>
-
-  <button class="btn btn-run" onclick="confirmAndRun()" id="runBtn">
-    ▶  اجرای اسکریپت
+  <button class="btn" onclick="run()">
+    <div class="btn-inner">
+      <span class="btn-icon">▶</span>
+      <span class="btn-text">اجرا</span>
+    </div>
   </button>
-  <button class="save-btn" onclick="saveConfig()">💾 ذخیره تنظیمات</button>
 
-  <div class="status" id="status"></div>
-  <div class="last-run" id="lastRun"></div>
+  <div class="spinner" id="sp"></div>
+  <div class="status" id="st"></div>
+  <div class="last"   id="lr"></div>
 </div>
 
 <script>
-  // بارگذاری تنظیمات ذخیره‌شده
-  (function loadSaved() {
-    const saved = JSON.parse(localStorage.getItem('scraper_cfg') || '{}');
-    if (saved.token)    document.getElementById('token').value    = saved.token;
-    if (saved.owner)    document.getElementById('owner').value    = saved.owner;
-    if (saved.repo)     document.getElementById('repo').value     = saved.repo;
-    if (saved.workflow) document.getElementById('workflow').value = saved.workflow;
-    const lr = localStorage.getItem('scraper_last_run');
-    if (lr) document.getElementById('lastRun').textContent = 'آخرین اجرا: ' + lr;
-  })();
+// ─── تنظیمات — فقط اینجا رو عوض کن ─────────
+const TOKEN    = "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";
+const OWNER    = "MortezaMdamli";
+const REPO     = "morvpnpy";
+const WORKFLOW = "sconfig.yml";
+const BRANCH   = "main";
+// ─────────────────────────────────────────────
 
-  function saveConfig() {
-    const cfg = {
-      token:    document.getElementById('token').value.trim(),
-      owner:    document.getElementById('owner').value.trim(),
-      repo:     document.getElementById('repo').value.trim(),
-      workflow: document.getElementById('workflow').value.trim(),
-    };
-    localStorage.setItem('scraper_cfg', JSON.stringify(cfg));
-    showStatus('✅ تنظیمات ذخیره شد.', 'success');
-  }
+const sp = document.getElementById('sp');
+const st = document.getElementById('st');
+const lr = document.getElementById('lr');
 
-  function confirmAndRun() {
-    const token    = document.getElementById('token').value.trim();
-    const owner    = document.getElementById('owner').value.trim();
-    const repo     = document.getElementById('repo').value.trim();
-    const workflow = document.getElementById('workflow').value.trim();
+const saved = localStorage.getItem('last_run');
+if (saved) lr.textContent = 'آخرین اجرا: ' + saved;
 
-    if (!token || !owner || !repo || !workflow) {
-      showStatus('❌ همه فیلدها رو پر کن.', 'error');
-      return;
-    }
-    if (!confirm('اسکریپت scraper رو در GitHub Actions اجرا کنم؟')) return;
-    triggerWorkflow(token, owner, repo, workflow);
-  }
+async function run() {
+  if (!confirm('اسکریپت رو اجرا کنم؟')) return;
 
-  async function triggerWorkflow(token, owner, repo, workflow) {
-    const btn = document.getElementById('runBtn');
-    btn.disabled = true;
-    showStatus('⏳ در حال ارسال درخواست به GitHub...', 'loading');
+  sp.classList.add('show');
+  st.className = 'status loading';
+  st.textContent = 'در حال ارسال...';
 
-    const url = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflow}/dispatches`;
-    try {
-      const res = await fetch(url, {
+  try {
+    const res = await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/actions/workflows/${WORKFLOW}/dispatches`,
+      {
         method: 'POST',
         headers: {
-          'Authorization': `token ${token}`,
+          'Authorization': `token ${TOKEN}`,
           'Accept': 'application/vnd.github+json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ ref: 'main' }),
-      });
-
-      if (res.status === 204) {
-        const now = new Date().toLocaleString('fa-IR');
-        localStorage.setItem('scraper_last_run', now);
-        document.getElementById('lastRun').textContent = 'آخرین اجرا: ' + now;
-        showStatus('✅ Workflow با موفقیت شروع شد!\nبرو GitHub → Actions برای دیدن نتیجه.', 'success');
-      } else {
-        const body = await res.json().catch(() => ({}));
-        showStatus(`❌ خطا ${res.status}: ${body.message || 'ناشناخته'}`, 'error');
+        body: JSON.stringify({ ref: BRANCH }),
       }
-    } catch (e) {
-      showStatus(`❌ خطای شبکه: ${e.message}`, 'error');
-    } finally {
-      btn.disabled = false;
+    );
+
+    if (res.status === 204) {
+      const now = new Date().toLocaleString('fa-IR');
+      localStorage.setItem('last_run', now);
+      lr.textContent = 'آخرین اجرا: ' + now;
+      st.className = 'status ok';
+      st.textContent = '✓ شروع شد';
+    } else {
+      const j = await res.json().catch(() => ({}));
+      st.className = 'status err';
+      st.textContent = `✗ خطا ${res.status}: ${j.message || ''}`;
     }
+  } catch(e) {
+    st.className = 'status err';
+    st.textContent = '✗ خطای اتصال';
   }
 
-  function showStatus(msg, type) {
-    const el = document.getElementById('status');
-    el.className = 'status ' + type;
-    el.style.whiteSpace = 'pre-line';
-    el.textContent = msg;
-  }
+  sp.classList.remove('show');
+}
 </script>
 </body>
 </html>
