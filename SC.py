@@ -19,7 +19,7 @@ api_hash = '3d9f5672b62ac793fd07c18b3a3999b7'
 SESSION_FILE = "v2ray_session"
 
 # ── تنظیمات Gist ──────────────────────────────
-GIST_TOKEN       = "YOUR_GITHUB_TOKEN_HERE"
+GIST_TOKEN       = "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"
 GIST_ID_CONFIGS  = "df9b838003979b88e37310e0ee90bcfe"   # گیست کانفیگ‌ها
 GIST_ID_PROXIES  = "b5048513069ca4f51a1f436a5aad4f8a"   # گیست پروکسی‌ها
 GIST_FILE_CONFIGS = "MORVPN_configs.txt"
